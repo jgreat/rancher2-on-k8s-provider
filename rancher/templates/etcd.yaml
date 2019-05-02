@@ -1,0 +1,61 @@
+{{- if eq .Values.k8sBackend "descrete" -}}
+apiVersion: "etcd.database.coreos.com/v1beta2"
+kind: "EtcdCluster"
+metadata:
+  name: {{ template "etcd.fullname" . }}
+  labels:
+    app: {{ template "etcd.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  annotations:
+    etcd.database.coreos.com/scope: clusterwide
+spec:
+  size: 3
+  version: {{ .Values.etcd.version }}
+  pod:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 9000
+      fsGroup: 9000
+    affinity:
+      podAntiAffinity:
+  {{- if eq .Values.etcd.antiAffinity "required" }}
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - {{ template "etcd.fullname" . }}
+          topologyKey: kubernetes.io/hostname
+  {{- else }}
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ template "etcd.fullname" . }}
+            topologyKey: kubernetes.io/hostname
+  {{- end }}
+  {{- if .Values.etcd.persistance.enabled }}
+    persistentVolumeClaimSpec:
+  {{- if .Values.etcd.persistance.storageClass }}
+      storageClassName: {{ .Values.etcd.persistance.storageClass }}
+  {{- end }}
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.etcd.persistance.size }}Gi
+  {{- end }}
+  TLS:
+    static:
+      member:
+        peerSecret: tls-{{ template "etcd.fullname" . }}-peer
+        serverSecret: tls-{{ template "etcd.fullname" . }}-server
+      operatorSecret: tls-{{ template "etcd.fullname" . }}-client
+{{- end -}}

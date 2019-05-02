@@ -1,0 +1,168 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: rancher-kube-apiserver
+  labels:
+    app: rancher-kube-apiserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rancher-kube-apiserver
+  template:
+    metadata:
+      labels:
+        app: rancher-kube-apiserver
+    spec:
+      automountServiceAccountToken: false
+      # enableServiceLinks: false # Must be k8s 1.13
+      containers:
+      - image: rancher/hyperkube:v1.14.1-rancher1
+        name: kube-apiserver
+        ports:
+        - containerPort: 6443
+          protocol: TCP
+        args:
+        - "kube-apiserver"
+        - "--anonymous-auth=false"
+        - "--authorization-mode=RBAC"
+        - "--bind-address=0.0.0.0"
+        - "--client-ca-file=/etc/kubernetes/ssl/apiserver/ca.crt"
+        - "--etcd-cafile=/etc/kubernetes/ssl/etcd/etcd-client-ca.crt"
+        - "--etcd-certfile=/etc/kubernetes/ssl/etcd/etcd-client.crt"
+        - "--etcd-keyfile=/etc/kubernetes/ssl/etcd/etcd-client.key"
+        - "--etcd-servers=https://rancher-etcd-client:2379"
+        - "--insecure-port=0"
+        - "--profiling=false"
+        - "--service-account-key-file=/etc/kubernetes/ssl/service-account/tls.key"
+        - "--tls-cert-file=/etc/kubernetes/ssl/apiserver/tls.crt"
+        - "--tls-private-key-file=/etc/kubernetes/ssl/apiserver/tls.key"
+        volumeMounts:
+        - mountPath: /etc/kubernetes/ssl/etcd
+          name: tls-rancher-etcd-client
+          readOnly: true
+        - mountPath: /etc/kubernetes/ssl/apiserver
+          name: tls-rancher-k8s-apiserver
+          readOnly: true
+        - mountPath: /etc/kubernetes/ssl/service-account
+          name: tls-rancher-k8s-service-account
+          readOnly: true
+        livenessProbe:
+          tcpSocket:
+            port: 6443
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6443
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: tls-rancher-etcd-client
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-etcd-client
+      - name: tls-rancher-k8s-apiserver
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-k8s-apiserver
+      - name: tls-rancher-k8s-service-account
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-k8s-service-account
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: rancher-kube-controller-manager
+  labels:
+    app: rancher-kube-controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rancher-kube-controller-manager
+  template:
+    metadata:
+      labels:
+        app: rancher-kube-controller-manager
+    spec:
+      automountServiceAccountToken: false
+      # enableServiceLinks: false # k8s 1.13 :(
+      containers:
+      - image: rancher/hyperkube:v1.14.1-rancher1
+        name: kube-controller-manager
+        ports:
+        - containerPort: 10252
+          protocol: TCP
+        args:
+        # wire up tls if we can get cert-manager working.
+        - "kube-controller-manager"
+        - "--cluster-name=rancher"
+        - "--kubeconfig=/etc/kubernetes/kubeconfig/controller-manager.kubeconfig"
+        - "--leader-elect=true"
+        - "--profiling=false"
+        - "--root-ca-file=/etc/kubernetes/ssl/service-account/ca.crt"
+        - "--service-account-private-key-file=/etc/kubernetes/ssl/service-account/tls.key"
+        - "--use-service-account-credentials=true"
+        env:
+        # Clear automatic variables.
+        - name: KUBERNETES_PORT
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP_ADDR
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP_PROTO
+          value: ""
+        - name: KUBERNETES_SERVICE_HOST
+          value: ""
+        - name: KUBERNETES_SERVICE_PORT
+          value: ""
+        - name: KUBERNETES_SERVICE_PORT_HTTPS
+          value: ""
+        volumeMounts:
+        - mountPath: /etc/kubernetes/kubeconfig
+          name: kubeconfig-rancher-k8s-controller-manager
+          readOnly: true
+        - mountPath: /etc/kubernetes/ssl/service-account
+          name: tls-rancher-k8s-service-account
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10252
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10252
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: kubeconfig-rancher-k8s-controller-manager
+        secret:
+          defaultMode: 0400
+          secretName: kubeconfig-rancher-k8s-controller-manager
+      - name: tls-rancher-k8s-service-account
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-k8s-service-account
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rancher-kube-apiserver
+  labels:
+    app: rancher-kube-apiserver
+spec:
+  ports:
+  - port: 6443
+    targetPort: 6443
+    protocol: TCP
+    name: kube-apiserver
+  selector:
+    app: rancher-kube-apiserver
+# Volumes
+# Secrets

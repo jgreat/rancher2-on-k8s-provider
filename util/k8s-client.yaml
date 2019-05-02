@@ -1,0 +1,47 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: k8s-client
+  labels:
+    app: k8s-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-client
+  template:
+    metadata:
+      labels:
+        app: k8s-client
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: rancher/hyperkube:v1.14.1-rancher1
+        name: k8s-client
+        command: [ "/bin/sh", "-c", "--" ]
+        args: [ "while true; do sleep 30; done;" ]
+        env:
+        # Clear automatic variables.
+        - name: KUBERNETES_PORT
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP_ADDR
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP_PROTO
+          value: ""
+        - name: KUBERNETES_SERVICE_HOST
+          value: ""
+        - name: KUBERNETES_SERVICE_PORT
+          value: ""
+        - name: KUBERNETES_SERVICE_PORT_HTTPS
+          value: ""
+        volumeMounts:
+        - mountPath: /data/k8s
+          name: kubeconfig-rancher-k8s-admin
+          readOnly: true
+      volumes:
+      - name: kubeconfig-rancher-k8s-admin
+        secret:
+          defaultMode: 0400
+          secretName: kubeconfig-rancher-k8s-admin

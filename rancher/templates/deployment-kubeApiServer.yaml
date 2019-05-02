@@ -1,0 +1,104 @@
+{{- if eq .Values.k8sBackend "descrete" }}
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ template "kubeApiServer.fullname" . }}
+  labels:
+    app: {{ template "kubeApiServer.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.kubeApiServer.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "kubeApiServer.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "kubeApiServer.fullname" . }}
+        release: {{ .Release.Name }}
+    spec:
+  {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 6 }}
+  {{- end }}
+      automountServiceAccountToken: false
+      affinity:
+        podAntiAffinity:
+  {{- if eq .Values.kubeApiServer.antiAffinity "required" }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ template "kubeApiServer.fullname" . }}
+            topologyKey: kubernetes.io/hostname
+  {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ template "kubeApiServer.fullname" . }}
+              topologyKey: kubernetes.io/hostname
+  {{- end }}
+      containers:
+      - image: "{{ .Values.kubeApiServer.image }}:{{ .Values.kubeApiServer.imageTag }}"
+        name: {{ template "kubeApiServer.fullname" . }}
+        ports:
+        - containerPort: 6443
+          protocol: TCP
+        args:
+        - "kube-apiserver"
+        - "--anonymous-auth=false"
+        - "--authorization-mode=RBAC"
+        - "--bind-address=0.0.0.0"
+        - "--client-ca-file=/etc/kubernetes/ssl/apiserver/ca.crt"
+        - "--etcd-cafile=/etc/kubernetes/ssl/etcd/etcd-client-ca.crt"
+        - "--etcd-certfile=/etc/kubernetes/ssl/etcd/etcd-client.crt"
+        - "--etcd-keyfile=/etc/kubernetes/ssl/etcd/etcd-client.key"
+        - "--etcd-servers=https://rancher-etcd-client:2379"
+        - "--insecure-port=0"
+        - "--profiling=false"
+        - "--service-account-key-file=/etc/kubernetes/ssl/service-account/tls.key"
+        - "--tls-cert-file=/etc/kubernetes/ssl/apiserver/tls.crt"
+        - "--tls-private-key-file=/etc/kubernetes/ssl/apiserver/tls.key"
+        volumeMounts:
+        - mountPath: /etc/kubernetes/ssl/etcd
+          name: tls-rancher-etcd-client
+          readOnly: true
+        - mountPath: /etc/kubernetes/ssl/apiserver
+          name: tls-rancher-k8s-apiserver
+          readOnly: true
+        - mountPath: /etc/kubernetes/ssl/service-account
+          name: tls-rancher-k8s-service-account
+          readOnly: true
+        livenessProbe:
+          tcpSocket:
+            port: 6443
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6443
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: tls-rancher-etcd-client
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-etcd-client
+      - name: tls-rancher-k8s-apiserver
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-k8s-apiserver
+      - name: tls-rancher-k8s-service-account
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-k8s-service-account
+{{- end -}}

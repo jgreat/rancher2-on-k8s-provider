@@ -1,0 +1,61 @@
+{{- if eq .Values.k8sBackend "descrete" }}
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: {{ template "etcd.fullname" . }}-peer
+  labels:
+    app: {{ template "rancher.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  secretName: tls-{{ template "etcd.fullname" . }}-peer
+  duration: 78840h
+  dnsNames:
+  - "*.{{ template "etcd.fullname" . }}.{{ .Release.Namespace }}.svc"
+  - "*.{{ template "etcd.fullname" . }}.{{ .Release.Namespace }}.svc.local"
+  issuerRef:
+    name: {{ template "etcd.fullname" . }}
+    kind: Issuer
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: {{ template "etcd.fullname" . }}-server
+  labels:
+    app: {{ template "rancher.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  secretName: tls-{{ template "etcd.fullname" . }}-server
+  duration: 78840h
+  dnsNames:
+  - "*.{{ template "etcd.fullname" . }}.{{ .Release.Namespace }}.svc"
+  - "*.{{ template "etcd.fullname" . }}.{{ .Release.Namespace }}.svc.local"
+  - "{{ template "etcd.fullname" . }}-client"
+  - "{{ template "etcd.fullname" . }}-client.{{ .Release.Namespace }}.svc"
+  - "{{ template "etcd.fullname" . }}-client.{{ .Release.Namespace }}.svc.local"
+  - "localhost"
+  issuerRef:
+    name: {{ template "etcd.fullname" . }}
+    kind: Issuer
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: {{ template "etcd.fullname" . }}-client
+  labels:
+    app: {{ template "rancher.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  secretName: tls-{{ template "etcd.fullname" . }}-client
+  duration: 78840h
+  dnsNames:
+  - "etcd-client"
+  issuerRef:
+    name: {{ template "etcd.fullname" . }}
+    kind: Issuer
+{{- end }}

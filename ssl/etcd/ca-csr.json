@@ -1,0 +1,16 @@
+{
+    "CN": "Rancher",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "O": "Rancher",
+            "C": "US",
+            "L": "The Cattle Ranch",
+            "ST": "California"
+        }
+    ]
+}
+

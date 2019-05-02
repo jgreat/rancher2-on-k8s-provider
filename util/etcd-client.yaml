@@ -1,0 +1,30 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: etcd-client
+  labels:
+    app: etcd-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: etcd-client
+  template:
+    metadata:
+      labels:
+        app: etcd-client
+    spec:
+      containers:
+      - image: quay.io/coreos/etcd:v3.2.26
+        name: etcd-client
+        command: [ "/bin/sh", "-c", "--" ]
+        args: [ "while true; do sleep 30; done;" ]
+        volumeMounts:
+        - mountPath: /data/ssl
+          name: tls-rancher-etcd-client
+          readOnly: true
+      volumes:
+      - name: tls-rancher-etcd-client
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-etcd-client

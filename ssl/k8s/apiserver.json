@@ -1,0 +1,28 @@
+{
+    "CN": "kube-apiserver",
+    "hosts": [
+        "localhost",
+        "127.0.0.1",
+        "kubernetes.default",
+        "kubernetes.default.svc",
+        "kubernetes.default.svc.cluster.local",
+        "rancher-kube-apiserver",
+        "rancher-kube-apiserver.cattle-system",
+        "rancher-kube-apiserver.cattle-system.svc",
+        "rancher-kube-apiserver.cattle-system.svc.cluster.local",
+        "*.rancher-kube-apiserver.cattle-system.svc",
+        "*.rancher-kube-apiserver.cattle-system.svc.cluster.local"
+    ],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "US",
+            "L": "The Ranch",
+            "O": "Rancher",
+            "ST": "California"
+        }
+    ]
+}

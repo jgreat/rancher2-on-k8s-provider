@@ -1,0 +1,21 @@
+{{- if eq .Values.k8sBackend "descrete" }}
+apiVersion: v1
+kind: Service
+metadata:
+# Hardcode name because kubeconfig files reference it
+#  name: {{ template "kubeApiServer.fullname" . }}
+  name: rancher-kube-apiserver
+  labels:
+    app: {{ template "kubeApiServer.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  ports:
+  - port: 6443
+    targetPort: 6443
+    protocol: TCP
+    name: kube-apiserver
+  selector:
+    app: {{ template "kubeApiServer.fullname" . }}
+{{- end -}}

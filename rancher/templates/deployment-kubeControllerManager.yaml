@@ -1,0 +1,109 @@
+{{- if eq .Values.k8sBackend "descrete" }}
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ template "kubeControllerManager.fullname" . }}
+  labels:
+    app: {{ template "kubeControllerManager.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.kubeControllerManager.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "kubeControllerManager.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "kubeControllerManager.fullname" . }}
+        release: {{ .Release.Name }}
+    spec:
+  {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 6 }}
+  {{- end }}
+      automountServiceAccountToken: false
+      affinity:
+        podAntiAffinity:
+  {{- if eq .Values.kubeControllerManager.antiAffinity "required" }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ template "kubeControllerManager.fullname" . }}
+            topologyKey: kubernetes.io/hostname
+  {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ template "kubeControllerManager.fullname" . }}
+              topologyKey: kubernetes.io/hostname
+  {{- end }}
+      containers:
+      - image: "{{ .Values.kubeControllerManager.image }}:{{ .Values.kubeControllerManager.imageTag }}"
+        name: {{ template "kubeControllerManager.fullname" . }}
+        ports:
+        - containerPort: 10252
+          protocol: TCP
+        args:
+        - "kube-controller-manager"
+        - "--cluster-name=rancher"
+        - "--kubeconfig=/etc/kubernetes/kubeconfig/controller-manager.kubeconfig"
+        - "--leader-elect=true"
+        - "--profiling=false"
+        - "--root-ca-file=/etc/kubernetes/ssl/service-account/ca.crt"
+        - "--service-account-private-key-file=/etc/kubernetes/ssl/service-account/tls.key"
+        - "--use-service-account-credentials=true"
+        env:
+        # Clear automatic variables.
+        - name: KUBERNETES_PORT
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP_ADDR
+          value: ""
+        - name: KUBERNETES_PORT_443_TCP_PROTO
+          value: ""
+        - name: KUBERNETES_SERVICE_HOST
+          value: ""
+        - name: KUBERNETES_SERVICE_PORT
+          value: ""
+        - name: KUBERNETES_SERVICE_PORT_HTTPS
+          value: ""
+        volumeMounts:
+        - mountPath: /etc/kubernetes/kubeconfig
+          name: kubeconfig-rancher-k8s-controller-manager
+          readOnly: true
+        - mountPath: /etc/kubernetes/ssl/service-account
+          name: tls-rancher-k8s-service-account
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10252
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10252
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: kubeconfig-rancher-k8s-controller-manager
+        secret:
+          defaultMode: 0400
+          secretName: kubeconfig-rancher-k8s-controller-manager
+      - name: tls-rancher-k8s-service-account
+        secret:
+          defaultMode: 0400
+          secretName: tls-rancher-k8s-service-account
+{{- end -}}

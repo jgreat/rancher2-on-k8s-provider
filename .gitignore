@@ -1,0 +1,6 @@
+*.key
+*.crt
+*.csr
+*.pem
+kube_config_cluster.yml
+*.kubeconfig
