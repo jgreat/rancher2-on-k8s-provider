@@ -56,7 +56,7 @@ kubeControllerManager:
   replicas: 2
 
 # k8sBackend
-#   descrete - launch descrete etcd/api/controller-manager instance on top of k8s (non-RKE clusters)
+#   discrete - launch discrete etcd/api/controller-manager instance on top of k8s (non-RKE clusters)
 #   rke - use RKE k8s as api and data store
 k8sBackend: rke
 

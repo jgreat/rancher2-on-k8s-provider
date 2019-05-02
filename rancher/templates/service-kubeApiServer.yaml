@@ -1,4 +1,4 @@
-{{- if eq .Values.k8sBackend "descrete" }}
+{{- if eq .Values.k8sBackend "discrete" }}
 apiVersion: v1
 kind: Service
 metadata:

@@ -1,4 +1,4 @@
-{{- if eq .Values.k8sBackend "descrete" }}
+{{- if eq .Values.k8sBackend "discrete" }}
 kind: Deployment
 apiVersion: apps/v1
 metadata:

@@ -1,4 +1,4 @@
-{{- if eq .Values.k8sBackend "descrete" -}}
+{{- if eq .Values.k8sBackend "discrete" -}}
 apiVersion: "etcd.database.coreos.com/v1beta2"
 kind: "EtcdCluster"
 metadata:

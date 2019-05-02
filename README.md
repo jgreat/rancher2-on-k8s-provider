@@ -156,7 +156,7 @@ kubectl -n cattle-system create secret generic kubeconfig-rancher-k8s-admin \
 ```plain
 cd ../../
 helm install ./rancher --name rancher --namespace cattle-system \
-  --set k8sBackend=descrete \
+  --set k8sBackend=discrete \
   --set replicas=1 \
   --set addLocal=false \
   --set hostname=jgreat-rancher-test-1.eng.rancher.space

@@ -69,7 +69,7 @@ spec:
         - "--http-listen-port=80"
         - "--https-listen-port=443"
         - "--add-local={{ .Values.addLocal }}"
-{{- if eq .Values.k8sBackend "descrete"}}
+{{- if eq .Values.k8sBackend "discrete"}}
         - "--kubeconfig=/etc/rancher/admin.kubeconfig"
         - "--k8s-mode=external"
 {{- end }}
@@ -80,7 +80,7 @@ spec:
         - name: CATTLE_PEER_SERVICE
           value: {{ template "rancher.fullname" . }}
 {{- end }}
-{{- if eq .Values.k8sBackend "descrete" }}
+{{- if eq .Values.k8sBackend "discrete" }}
         - name: KUBERNETES_PORT
           value: ""
         - name: KUBERNETES_PORT_443_TCP
@@ -132,7 +132,7 @@ spec:
         resources:
 {{ toYaml .Values.resources | indent 10 }}
         volumeMounts:
-{{- if eq .Values.k8sBackend "descrete" }}
+{{- if eq .Values.k8sBackend "discrete" }}
         - mountPath: /etc/rancher/admin.kubeconfig
           name: kubeconfig-rancher-k8s-admin
           subPath: admin.kubeconfig
@@ -177,7 +177,7 @@ spec:
           name: audit-log
 {{- end }}
       volumes:
-{{- if eq .Values.k8sBackend "descrete" }}
+{{- if eq .Values.k8sBackend "discrete" }}
       - name: kubeconfig-rancher-k8s-admin
         secret:
           defaultMode: 0400
