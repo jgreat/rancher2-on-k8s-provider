@@ -20,6 +20,8 @@ Credit where credit is due. A lot of this was complied from examples in kelseyhi
 
 This example uses GKE, since its the easiest provider to get a functional/stable K8s instance on, but any k8s with cloud-provider integration should work.
 
+![Deployed Objects](r_on_k8s_provider.png?raw=true "Deployed Objects")
+
 ### Create Cluster
 
 ```plain
